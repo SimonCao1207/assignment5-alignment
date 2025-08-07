@@ -18,7 +18,6 @@ from .adapters import (
 )
 
 
-@pytest.mark.skip(reason="Not implemented")
 def test_tokenize_prompt_and_output(
     numpy_snapshot, prompt_strs, output_strs, tokenizer
 ):
