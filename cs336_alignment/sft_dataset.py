@@ -30,33 +30,35 @@ def tokenize_prompt_and_output(
     response_mask torch.Tensor of shape (batch_size, max(prompt_and_output_lens) - 1): a mask on the response tokens in the labels.
     """
 
+    full_ids = tokenizer(
+        prompt_strs,
+        output_strs,
+        add_special_tokens=False,
+        padding=True,
+        return_tensors="pt",
+    )["input_ids"]
+
     prompt_ids = tokenizer(prompt_strs, add_special_tokens=False)["input_ids"]
     response_ids = tokenizer(output_strs, add_special_tokens=False)["input_ids"]
     input_ids_list = []
-    labels_list = []
     response_mask_list = []
 
     for p_ids, r_ids in zip(prompt_ids, response_ids):
         full_ids = p_ids + r_ids  # concat
         input_ids = torch.tensor(full_ids, dtype=torch.long)
-        labels = torch.tensor(full_ids, dtype=torch.long)
         mask = torch.zeros(len(full_ids) - 1, dtype=torch.long)
         mask[len(p_ids) - 1 :] = 1
         input_ids_list.append(input_ids)
-        labels_list.append(labels)
         response_mask_list.append(mask)
 
     input_ids = pad_sequence(
         input_ids_list, batch_first=True, padding_value=tokenizer.pad_token_id
     )
-    labels = pad_sequence(
-        labels_list, batch_first=True, padding_value=tokenizer.pad_token_id
-    )
+    response_mask = pad_sequence(response_mask_list, batch_first=True, padding_value=0)
+    labels = input_ids.clone()
 
     input_ids = input_ids[:, :-1]  # remove the last token
     labels = labels[:, 1:]  # remove the first token
-
-    response_mask = pad_sequence(response_mask_list, batch_first=True, padding_value=0)
 
     return {
         "input_ids": input_ids,
