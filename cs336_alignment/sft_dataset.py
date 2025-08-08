@@ -44,10 +44,7 @@ def tokenize_prompt_and_output(
         mask[len(p_ids) - 1 :] = 1
         input_ids_list.append(input_ids)
         response_mask_list.append(mask)
-    assert isinstance(tokenizer.pad_token_id, float), "Tokenizer must have a pad token."
-    input_ids = pad_sequence(
-        input_ids_list, batch_first=True, padding_value=tokenizer.pad_token_id
-    )
+    input_ids = pad_sequence(input_ids_list, batch_first=True, padding_value=tokenizer.pad_token_id)  # type: ignore
     response_mask = pad_sequence(response_mask_list, batch_first=True, padding_value=0)
     labels = input_ids.clone()
 

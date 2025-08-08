@@ -32,7 +32,6 @@ def test_compute_entropy(numpy_snapshot, logits):
     numpy_snapshot.assert_match(output)
 
 
-@pytest.mark.skip(reason="Not implemented")
 def test_get_response_log_probs(
     numpy_snapshot,
     model,
