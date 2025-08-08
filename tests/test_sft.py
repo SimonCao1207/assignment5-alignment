@@ -1,4 +1,3 @@
-import pytest
 import torch
 
 from .adapters import (
@@ -57,7 +56,6 @@ def test_masked_normalize_dim0(numpy_snapshot, tensor, mask, normalize_constant)
     numpy_snapshot.assert_match(output)
 
 
-@pytest.mark.skip(reason="Not implemented")
 def test_masked_normalize_dim1(numpy_snapshot, tensor, mask, normalize_constant):
     output = masked_normalize(
         tensor=tensor,
@@ -68,7 +66,6 @@ def test_masked_normalize_dim1(numpy_snapshot, tensor, mask, normalize_constant)
     numpy_snapshot.assert_match(output)
 
 
-@pytest.mark.skip(reason="Not implemented")
 def test_masked_normalize_dimlast(numpy_snapshot, tensor, mask, normalize_constant):
     output = masked_normalize(
         tensor=tensor,
@@ -79,7 +76,6 @@ def test_masked_normalize_dimlast(numpy_snapshot, tensor, mask, normalize_consta
     numpy_snapshot.assert_match(output)
 
 
-@pytest.mark.skip(reason="Not implemented")
 def test_masked_normalize_dimNone(numpy_snapshot, tensor, mask, normalize_constant):
     output = masked_normalize(
         tensor=tensor,
@@ -89,7 +85,6 @@ def test_masked_normalize_dimNone(numpy_snapshot, tensor, mask, normalize_consta
     numpy_snapshot.assert_match(output)
 
 
-@pytest.mark.skip(reason="Not implemented")
 def test_sft_microbatch_train_step(
     numpy_snapshot,
     policy_log_probs,
@@ -107,7 +102,6 @@ def test_sft_microbatch_train_step(
     numpy_snapshot.assert_match(output)
 
 
-@pytest.mark.skip(reason="Not implemented")
 def test_sft_microbatch_train_step_normalize(
     numpy_snapshot,
     policy_log_probs,
@@ -126,7 +120,6 @@ def test_sft_microbatch_train_step_normalize(
     numpy_snapshot.assert_match(output)
 
 
-@pytest.mark.skip(reason="Not implemented")
 def test_sft_microbatch_train_step_10_steps(
     numpy_snapshot,
     policy_log_probs,
