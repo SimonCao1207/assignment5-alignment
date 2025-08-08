@@ -18,9 +18,7 @@ from .adapters import (
 )
 
 
-def test_tokenize_prompt_and_output(
-    numpy_snapshot, prompt_strs, output_strs, tokenizer
-):
+def test_tokenize_prompt_and_output(numpy_snapshot, prompt_strs, output_strs, tokenizer):
     output = tokenize_prompt_and_output(
         prompt_strs=prompt_strs,
         output_strs=output_strs,
@@ -29,7 +27,6 @@ def test_tokenize_prompt_and_output(
     numpy_snapshot.assert_match(output)
 
 
-@pytest.mark.skip(reason="Not implemented")
 def test_compute_entropy(numpy_snapshot, logits):
     output = compute_entropy(logits)
     numpy_snapshot.assert_match(output)

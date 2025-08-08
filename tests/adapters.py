@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Callable, Literal
+from collections.abc import Callable
+from typing import Any, Literal
 
 import torch
 from torch import Tensor
@@ -9,6 +10,7 @@ from torch.utils.data import Dataset
 from transformers import PreTrainedTokenizerBase
 
 from cs336_alignment.sft_dataset import tokenize_prompt_and_output
+from cs336_alignment.utils import compute_entropy
 
 
 def run_tokenize_prompt_and_output(
@@ -88,7 +90,7 @@ def run_compute_group_normalized_rewards(
 
 def run_compute_entropy(logits: torch.Tensor) -> torch.Tensor:
     """Get the entropy of the logits (i.e., entropy of the final dimension)."""
-    raise NotImplementedError
+    return compute_entropy(logits)
 
 
 def run_get_response_log_probs(
@@ -183,9 +185,7 @@ def run_compute_policy_gradient_loss(
     raise NotImplementedError
 
 
-def run_masked_mean(
-    tensor: torch.Tensor, mask: torch.Tensor, dim: int | None = None
-) -> torch.Tensor:
+def run_masked_mean(tensor: torch.Tensor, mask: torch.Tensor, dim: int | None = None) -> torch.Tensor:
     """Compute the mean of the tensor along a dimension,
     considering only the elements with mask value 1.
 

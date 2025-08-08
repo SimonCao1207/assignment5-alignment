@@ -23,6 +23,12 @@ jobs:
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      
+      - name: Install packages except flash-attn
+        run: uv sync --no-install-package flash-attn
+
+      - name: Install all packages including flash-attn
+        run: uv sync
 
       - name: Run Ruff formatting check
         run: uv run ruff format --check .

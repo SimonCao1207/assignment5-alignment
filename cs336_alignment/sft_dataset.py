@@ -30,16 +30,10 @@ def tokenize_prompt_and_output(
     response_mask torch.Tensor of shape (batch_size, max(prompt_and_output_lens) - 1): a mask on the response tokens in the labels.
     """
 
-    full_ids = tokenizer(
-        prompt_strs,
-        output_strs,
-        add_special_tokens=False,
-        padding=True,
-        return_tensors="pt",
-    )["input_ids"]
-
     prompt_ids = tokenizer(prompt_strs, add_special_tokens=False)["input_ids"]
     response_ids = tokenizer(output_strs, add_special_tokens=False)["input_ids"]
+
+    assert isinstance(prompt_ids, list) and isinstance(response_ids, list)
     input_ids_list = []
     response_mask_list = []
 
@@ -50,7 +44,7 @@ def tokenize_prompt_and_output(
         mask[len(p_ids) - 1 :] = 1
         input_ids_list.append(input_ids)
         response_mask_list.append(mask)
-
+    assert isinstance(tokenizer.pad_token_id, float), "Tokenizer must have a pad token."
     input_ids = pad_sequence(
         input_ids_list, batch_first=True, padding_value=tokenizer.pad_token_id
     )
