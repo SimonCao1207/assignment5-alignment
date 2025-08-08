@@ -1,7 +1,6 @@
 import torch
 from jaxtyping import Float
 from torch import Tensor
-from transformers import AutoModelForCausalLM
 
 
 def compute_entropy(logits: Float[Tensor, "B S V"]) -> Float[Tensor, "B S"]:
@@ -28,16 +27,14 @@ def get_reponse_log_probs(
     return {"log_probs": log_probs}
 
 
+def masked_normalize(tensor: Tensor, mask: Tensor, normalize_constant: float, dim: int) -> Tensor:
+    return ((tensor * mask).sum(dim=dim)) / normalize_constant
+
+
 if __name__ == "__main__":
     # Example usage
-    logits = torch.randn(2, 5, 10)  # Batch size 2, sequence length 5, vocabulary size 10
-    entropy = compute_entropy(logits)
-    print("Entropy:", entropy)
-
-    model_name = "Qwen/Qwen2.5-Math-1.5B"
-    model = AutoModelForCausalLM.from_pretrained(model_name)
-
-    input_ids = torch.randint(0, 10, (2, 5))  # Random input ids
-    labels = torch.randint(0, 10, (2, 5))  # Random labels
-    response_log_probs = get_reponse_log_probs(model, input_ids, labels)
-    print("Response Log Probabilities:", response_log_probs["log_probs"])
+    dim = 2
+    tensor = torch.randn(2, 5, 10)
+    mask = torch.ones_like(tensor, dtype=torch.bool)
+    normalize_constant = 2
+    masked_normalized_tensor = masked_normalize(tensor, mask, normalize_constant, dim)
