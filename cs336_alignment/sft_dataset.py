@@ -1,25 +1,46 @@
+from collections.abc import Callable
+
+import pandas as pd
 import torch
+from torch import Tensor
 from torch.nn.utils.rnn import pad_sequence
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 
 class SFTDataset(Dataset):
-    """
-    This is an in-memory SFTDataset
-
-    Arguments:
-        config (OmegaConf): the data config
-    """
-
-    def __init__(self, parquet_file: str, tokenizer, config):
-        self.parquet_file = parquet_file
+    def __init__(
+        self,
+        config,
+        tokenizer: PreTrainedTokenizerBase,
+        data_path: str = "data/gsm8k/train.jsonl",
+    ):
         self.tokenizer: PreTrainedTokenizerBase = tokenizer
+        assert data_path.endswith(".jsonl")
+        self.df = pd.read_json(data_path, lines=True)
+        self.prompts = self.df["question"].tolist()
+        self.responses = self.df["answer"].tolist()
+        self.batch_size = config.batch_size
+
+    def __len__(self):
+        return len(self.prompts)
+
+    def __getitem__(self, idx: int) -> tuple[str, str]:
+        return self.prompts[idx], self.responses[idx]
+
+
+def make_collate_fn(tokenizer: PreTrainedTokenizerBase) -> Callable[[list[tuple[str, str]]], dict[str, Tensor]]:
+    def collate_fn(batch: list[tuple[str, str]]) -> dict[str, Tensor]:
+        prompts, responses = zip(*batch)
+        prompts, responses = list(prompts), list(responses)
+        return tokenize_prompt_and_output(prompts, responses, tokenizer)
+
+    return collate_fn
 
 
 def tokenize_prompt_and_output(
     prompt_strs: list[str], output_strs: list[str], tokenizer: PreTrainedTokenizerBase
-) -> dict[str, torch.Tensor]:
+) -> dict[str, Tensor]:
     """
     Let prompt_and_output_lens be a list containing the lengths of
     the tokenized prompt and output strings. Then the returned dictionary should have the
@@ -59,16 +80,20 @@ def tokenize_prompt_and_output(
 
 
 if __name__ == "__main__":
-    prompt_strs = [
-        "Hello, world!",
-        "This is a test.",
-        "This is another test.",
-    ]
-    output_strs = [
-        "Hello, world!",
-        "This is a test.",
-        "This is another test.",
-    ]
     model_id = "Qwen/Qwen2.5-Math-1.5B"
     tokenizer = AutoTokenizer.from_pretrained(model_id)
-    result = tokenize_prompt_and_output(prompt_strs, output_strs, tokenizer)
+    collate_fn = make_collate_fn(tokenizer)
+    train_dataset = SFTDataset(tokenizer, "data/gsm8k/train.jsonl")
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=8,
+        shuffle=True,
+        num_workers=2,
+        pin_memory=True,
+        drop_last=False,
+        collate_fn=collate_fn,
+    )
+    batch = next(iter(train_loader))
+    for k, v in batch.items():
+        print(k, v.shape, v.dtype)
+        break

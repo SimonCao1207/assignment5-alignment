@@ -1,26 +1,69 @@
+from dataclasses import dataclass
+
 import torch
 from jaxtyping import Float
 from torch import Tensor
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from torch.utils.data import DataLoader, Dataset
+from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
-from cs336_alignment.utils import masked_normalize
-
-
-def save_pretrained(model, tokenizer, output_dir):
-    """Save the model and tokenizer to the specified directory."""
-    model.save_pretrained(save_directory=output_dir)
-    tokenizer.save_pretrained(save_directory=output_dir)
+from cs336_alignment.sft_dataset import SFTDataset, make_collate_fn
+from cs336_alignment.utils import load_pretrained, masked_normalize
 
 
-def load_pretrained(model_name):
-    """Load the model and tokenizer from the specified model name."""
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        torch_dtype=torch.bfloat16,
-        attn_implementation="flash_attention_2",
-    )
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    return model, tokenizer
+@dataclass
+class TrainConfig:
+    # Model
+    learning_rate: float = 6e-4
+    betas: tuple[float, float] = (0.9, 0.95)
+    weight_decay: float = 1e-1
+
+    # Data
+    batch_size: int = 8
+
+
+class SFTTrainer:
+    def __init__(
+        self,
+        config: TrainConfig,
+        tokenizer: PreTrainedTokenizerBase,
+        model: PreTrainedModel,
+        train_dataset: Dataset,
+        val_dataset: Dataset,
+    ):
+        self._build_dataloader(train_dataset, val_dataset)
+
+        self.config = config
+        self.tokenizer = tokenizer
+        self.model = model
+        self.optimizer = torch.optim.AdamW(
+            self.model.parameters(), lr=config.learning_rate, betas=config.betas, weight_decay=config.weight_decay
+        )
+
+    def _build_dataloader(self, train_ds, val_ds):
+        self.train_dataset, self.val_dataset = train_ds, val_ds
+        collate_fn = make_collate_fn(self.tokenizer)
+        self.train_loader = DataLoader(
+            train_ds,
+            batch_size=8,
+            shuffle=True,
+            num_workers=2,
+            pin_memory=True,
+            drop_last=False,
+            collate_fn=collate_fn,
+        )
+
+        self.val_loader = DataLoader(
+            val_ds,
+            batch_size=8,
+            shuffle=False,
+            num_workers=2,
+            pin_memory=True,
+            drop_last=False,
+            collate_fn=collate_fn,
+        )
+
+    def train(self):
+        pass
 
 
 def sft_microbatch_train_step(
@@ -37,26 +80,10 @@ def sft_microbatch_train_step(
 
 
 if __name__ == "__main__":
-    policy_log_probs = torch.tensor(
-        [
-            [1.9269, 1.4873, 0.9007, -2.1055, -0.7581, 1.0783, 0.8008, 1.6806, 0.3559, -0.6866],
-            [-0.4934, 0.2415, -0.2316, 0.0418, -0.2516, 0.8599, -0.3097, -0.3957, 0.8034, -0.6216],
-        ],
-        requires_grad=True,
-    )
-
-    response_mask = torch.tensor(
-        [
-            [True, True, False, True, False, True, False, True, True, False],
-            [True, True, True, True, True, False, True, True, False, True],
-        ]
-    )
-
-    gradient_accumulation_steps = 2
-    normalize_constant = 42.0
-    loss, metadata = sft_microbatch_train_step(
-        policy_log_probs=policy_log_probs,
-        response_mask=response_mask,
-        gradient_accumulation_steps=gradient_accumulation_steps,
-        normalize_constant=normalize_constant,
-    )
+    model_name = "Qwen/Qwen2.5-Math-1.5B"
+    model, tokenizer = load_pretrained(model_name)
+    config = TrainConfig()
+    train_ds = SFTDataset(tokenizer, "data/gsm8k/train.jsonl", config.batch_size)
+    val_ds = SFTDataset(tokenizer, "data/gsm8k/test.jsonl", config.batch_size)
+    trainer = SFTTrainer(config, tokenizer, model, train_ds, val_ds)
+    trainer.train()

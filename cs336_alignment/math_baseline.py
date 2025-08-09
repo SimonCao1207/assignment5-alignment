@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Callable, List
+from collections.abc import Callable
 
 from datasets import load_dataset
 from drgrpo_grader import r1_zero_reward_fn
@@ -12,8 +12,8 @@ TEMPLATE_PATH = "cs336_alignment/prompts/r1_zero.prompt"
 def evaluate_vllm(
     vllm_model: LLM,
     reward_fn: Callable[[str, str], dict[str, float]],
-    prompts: List[str],
-    ground_truths: List[str],
+    prompts: list[str],
+    ground_truths: list[str],
     eval_sampling_params: SamplingParams,
 ) -> None:
     """
@@ -41,9 +41,7 @@ def evaluate_vllm(
         results.append(result)
 
     print(f"Number of correct responses: {num_correct}/{len(prompts)}")
-    print(
-        f"Number of formatted but incorrect responses: {num_formated_but_not_correct}/{len(prompts)}"
-    )
+    print(f"Number of formatted but incorrect responses: {num_formated_but_not_correct}/{len(prompts)}")
     print(f"Number of unformatted responses: {num_unformated}/{len(prompts)}")
 
     os.makedirs("cs336_alignment/results", exist_ok=True)
@@ -52,7 +50,7 @@ def evaluate_vllm(
 
 model_name = "Qwen/Qwen2.5-Math-1.5B"
 ds = load_dataset("hiyouga/math12k", split="test")
-template = open(TEMPLATE_PATH, "r").read()
+template = open(TEMPLATE_PATH).read()
 formatted_prompts = [template.format(question=problem) for problem in ds["problem"]]
 ground_truths = list(ds["answer"])
 sampling_params = SamplingParams(
